@@ -1,0 +1,12 @@
+pipeline {
+  agent any
+  stages {
+    stage('Unit') { steps { sh 'npm ci --prefix frontend && npm run build --prefix frontend' } }
+    stage('E2E Matrix') {
+      matrix {
+        axes { axis { name 'BROWSER'; values 'chromium', 'firefox' } }
+        stages { stage('Run') { steps { sh 'cd frontend && npx playwright test --project=$BROWSER' } } }
+      }
+    }
+  }
+}
