@@ -40,6 +40,43 @@ Git Push/PR -> CI Controller -> Change Impact Analyzer -> Queue
 - `npm run test:ui:tag:critical` run critical-path tests.
 - `npm run test:ui:flaky` generate flaky analytics report from Playwright JSON output.
 - `npm run test:ui:live` start SSE live dashboard service.
+- Cache layers for npm + Playwright browser binaries.
+- JUnit + JSON + HTML outputs and failure artifacts.
+- Foundations for OpenTelemetry endpoint wiring.
+
+## Pipeline split
+- `unit-integration` job: fast compile/build checks.
+- `e2e` job: browser automation in shards.
+- `report` job: artifact aggregation and external notifications.
+
+## Flaky detection strategy
+- Use retries in CI only.
+- Parse `results.json` to compute instability score:
+  - `instability = retries_used / total_runs`
+- Quarantine policy (recommended): if instability > 0.15 over 20+ runs.
+
+## Caching strategy
+- Dependency cache keyed by lockfile hash.
+- Playwright binary cache keyed by OS + lockfile hash.
+- Extend with remote cache (Nx/Turborepo/Bazel) for monorepo-wide artifacts.
+
+## CI portability templates
+- GitHub Actions: first-class (implemented).
+- GitLab/Jenkins/Azure: use same stages + matrix semantics from `tools/ci-templates`.
+
+## Benchmark model
+Capture before/after and keep under 10 minutes:
+- Baseline total runtime
+- Post-parallel runtime
+- Cache warm runtime
+- Flaky retry overhead
+
+## Migration guide (incremental)
+1. Land Playwright config + smoke tests.
+2. Enable matrix sharding with 2 shards; measure.
+3. Increase shards until diminishing returns.
+4. Add flaky analytics persistence (DB).
+5. Add live dashboard (SSE/WebSocket) from test event stream.
 
 ## Best practices
 - Avoid shared mutable state between tests.
