@@ -7,6 +7,14 @@
 4. Scalability
 5. Developer Experience
 
+## New Enhancements in this revision
+- Added flaky analytics report generator (`flaky-analyzer.mjs`) for retry-rate + instability reporting.
+- Added SSE live dashboard service (`live-dashboard.mjs`) for near-real-time CI feedback streaming.
+- Added test tagging support (`@smoke`, `@critical`) and tag-based commands.
+- Added Docker layer cache foundation for preview/canary image builds in CI.
+- Added workflow-dispatch shard override input to tune parallelism by workload.
+- Enhanced homepage UI with pipeline reliability cards for operator visibility.
+
 ## Architecture
 ```text
 Git Push/PR -> CI Controller -> Change Impact Analyzer -> Queue
@@ -21,6 +29,17 @@ Git Push/PR -> CI Controller -> Change Impact Analyzer -> Queue
 - Deterministic runtime settings (UTC locale/timezone).
 - Fail-fast mode for critical failures.
 - Smart selective execution via git-diff gate.
+- Cache layers for npm + Playwright browser binaries + Docker layers.
+- JUnit + JSON + HTML outputs and failure artifacts.
+- Flaky report generation for quarantine automation foundations.
+- Foundations for OpenTelemetry endpoint wiring.
+
+## Commands
+- `npm run test:ui` run all UI tests.
+- `npm run test:ui:tag:smoke` run only smoke test slice.
+- `npm run test:ui:tag:critical` run critical-path tests.
+- `npm run test:ui:flaky` generate flaky analytics report from Playwright JSON output.
+- `npm run test:ui:live` start SSE live dashboard service.
 - Cache layers for npm + Playwright browser binaries.
 - JUnit + JSON + HTML outputs and failure artifacts.
 - Foundations for OpenTelemetry endpoint wiring.
