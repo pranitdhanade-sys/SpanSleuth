@@ -1,0 +1,7 @@
+stages: [unit, e2e, report]
+ui:e2e:
+  stage: e2e
+  parallel: 4
+  script:
+    - npm ci --prefix frontend
+    - npx playwright test --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL

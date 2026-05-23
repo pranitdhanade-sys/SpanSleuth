@@ -1,0 +1,93 @@
+name: UI Testing Pipeline
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ui-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      skip_ui: ${{ steps.filter.outputs.skip_ui }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - id: filter
+        run: |
+          node frontend/scripts/selective-tests.mjs >> "$GITHUB_OUTPUT"
+
+  unit-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+
+  e2e:
+    needs: changes
+    if: needs.changes.outputs.skip_ui == '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: true
+      matrix:
+        shard: [1, 2, 3, 4]
+        browser: [chromium, firefox]
+    env:
+      SHARD_TOTAL: 4
+      SHARD_INDEX: ${{ matrix.shard }}
+      FAIL_FAST: '1'
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Cache Playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+        working-directory: frontend
+      - name: Shard by runtime manifest
+        run: echo "PW_TEST_MATCH=$(node frontend/scripts/shard-runtime.mjs)" >> $GITHUB_ENV
+      - name: Run Playwright
+        working-directory: frontend
+        run: npx playwright test --project=${{ matrix.browser }} $PW_TEST_MATCH
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-${{ matrix.browser }}-shard-${{ matrix.shard }}
+          path: |
+            frontend/test-results
+
+  report:
+    needs: [e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - run: |
+          echo "Aggregate and publish reports (HTML/JUnit/JSON)"
+          echo "Emit flaky metrics, Prometheus pushgateway, and Slack notifications here."
