@@ -1,0 +1,11 @@
+trigger:
+- main
+pool:
+  vmImage: ubuntu-latest
+strategy:
+  matrix:
+    chromium: { browser: chromium }
+    firefox: { browser: firefox }
+steps:
+- script: npm ci --prefix frontend
+- script: cd frontend && npx playwright test --project=$(browser)

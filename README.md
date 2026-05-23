@@ -32,3 +32,11 @@ Services:
 - Dark-mode observability dashboard and incident assistant
 
 See `docs/architecture.md` for deeper design details.
+
+## UI Testing Pipeline
+- Playwright-based parallel UI pipeline with sharding, retries, fail-fast, and deterministic timezone/locale.
+- Caching for dependencies and browser binaries in GitHub Actions.
+- Rich HTML/JUnit/JSON outputs with trace/video/screenshot artifacts.
+- See `docs/ui-testing-pipeline.md` and `.github/workflows/ui-testing.yml`.
+
+- Local live diagnostics: `npm run test:ui:flaky` and `npm run test:ui:live` (from `frontend/`).
